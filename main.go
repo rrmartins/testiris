@@ -42,8 +42,18 @@ func (u UserAPI) DeleteBy(id string) {
 
 func main() {
 	api := iris.New()
-	api.API("/users", UserAPI{})
+	api.API("/users", UserAPI{}, myUsersMiddleware1, myUsersMiddleware2)
 	api.Listen(":8080")
+}
+
+func myUsersMiddleware1(ctx *iris.Context) {
+	println("from users middleware 1")
+	ctx.Next()
+}
+
+func myUsersMiddleware2(ctx *iris.Context) {
+	println("from users middleware 2")
+	ctx.Next()
 }
 
 func hi(ctx *iris.Context) {
