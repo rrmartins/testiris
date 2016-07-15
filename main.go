@@ -2,60 +2,38 @@ package main
 
 import "github.com/kataras/iris"
 
-type UserAPI struct {
-	*iris.Context
-}
-
-// Get /users
-func (u UserAPI) Get() {
-	u.Write("Get from /users")
-	// u.JSON(iris.StatusOK, myDb.AllUsers())
-}
-
-// Get /:param1 which its value passed to the id argument
-func (u UserAPI) GetBy(id string) { // id equals to u.Param("param1")
-	u.Write("Get from /users/%s", id)
-	// u.JSON(iris.StatusOK, myDb.GetUserById(id))
-}
-
-// PUT /users
-func (u UserAPI) Put() {
-	name := u.FormValue("name") // you can still use the whole context's feature!
-	// myDb.InsertUser(...)
-	println(string(name))
-	println("Put from /users")
-}
-
-// POST /users/:param1
-func (u UserAPI) PostBy(id string) {
-	name := u.FormValue("name") // you can still use the whole context's feature!
-	// myDb.UpdateUser(...)
-	println(string(name))
-	println("Post from /users/" + id)
-}
-
-// DELETE /users/:param1
-func (u UserAPI) DeleteBy(id string) {
-	// myDb.DeleteUser(id)
-	println("Delete from /" + id)
-}
-
 func main() {
-	api := iris.New()
-	api.API("/users", UserAPI{}, myUsersMiddleware1, myUsersMiddleware2)
-	api.Listen(":8080")
-}
+	admin := iris.Party("/admin")
+	{
+		// add a silly middleware
+		admin.UseFunc(func(c *iris.Context) {
+			// your authentication logic here...
+			println("from ", c.PathString())
+			authorized := true
+			if authorized {
+				c.Next()
+			} else {
+				c.Text(401, c.PathString()+" is not authorized for you")
+			}
+		})
 
-func myUsersMiddleware1(ctx *iris.Context) {
-	println("from users middleware 1")
-	ctx.Next()
-}
+		admin.Get("/", func(c *iris.Context) {
+			c.Write("from /admin/ or /admin if you path correction on")
+		})
 
-func myUsersMiddleware2(ctx *iris.Context) {
-	println("from users middleware 2")
-	ctx.Next()
-}
+		admin.Get("/dashboard", func(c *iris.Context) {
+			c.Write("/admin/dashboard")
+		})
 
-func hi(ctx *iris.Context) {
-	ctx.Render("hi.html", map[string]interface{}{"Name": "natali"})
+		admin.Delete("/delete/:userId", func(c *iris.Context) {
+			c.Write("admin/delete/&s", c.Param("userId"))
+		})
+	}
+	beta := admin.Party("/beta")
+	beta.Get("/hey", func(c *iris.Context) {
+		c.Write("hey from /admin/beta/hey")
+	})
+
+	// for subdomains goto: ../subdomains_1/main.go
+	iris.Listen(":8181")
 }
